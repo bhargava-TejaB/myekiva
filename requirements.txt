@@ -1,0 +1,4 @@
+Django>=5.1.7
+djangorestframework>=3.12.4
+django-polymorphic>=3.0.0
+pillow>=25.0.0
