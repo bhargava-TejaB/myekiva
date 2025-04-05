@@ -120,11 +120,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
 
+# Where collectstatic will put all static files for production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ← For Render deployment
+
+# Optional: If you have custom static assets (not admin or app-level ones), use this:
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # ← optional: your custom static files
+    os.path.join(BASE_DIR, 'static'),  # ← Only if you have custom static files
 ]
 
 # Default primary key field type
