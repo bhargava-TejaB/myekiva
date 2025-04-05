@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7wf&(ugst2#rd-($+mf@#j(6k&!x2ot^0h$pany890@#1wkgd7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['myekiva-api.onrender.com','localhost']
 
 
 # Application definition
