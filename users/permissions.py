@@ -19,3 +19,10 @@ class IsTeacher(BasePermission):
 class IsStudent(BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.user_type == 'student'
+    
+class IsSuperUserOrSchoolAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and (
+            request.user.is_superuser or 
+            (hasattr(request.user, 'user_type') and request.user.user_type == 'schooladmin')
+        )

@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from schools.models import School
+from schools.models import School, Subject, Classroom
 
 class User(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -21,7 +21,7 @@ class User(AbstractUser):
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    classroom = models.CharField(max_length=100)  # or FK to Classroom
+    classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE)
     roll_number = models.CharField(max_length=20)
     date_of_birth = models.DateField()
     parent_name = models.CharField(max_length=100)
@@ -36,7 +36,7 @@ class Student(models.Model):
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subjects_taught = models.TextField(blank=True)
+    subjects = models.ManyToManyField(Subject, related_name='teachers', blank=True)
     contact_number = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
 

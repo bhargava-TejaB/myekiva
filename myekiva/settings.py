@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7wf&(ugst2#rd-($+mf@#j(6k&!x2ot^0h$pany890@#1wkgd7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost','127.0.0.1','ngrok.io','.ngrok-free.app']
 
 
 # Application definition
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'users',
     'schools'
 ]
@@ -137,3 +138,15 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app",
+    "https://*.ngrok.io",  # add this too if you're using old ngrok domains
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # If you're using JWT
+    ),
+}
