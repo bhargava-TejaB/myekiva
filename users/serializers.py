@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User, SchoolAdmin, Teacher, Student
 from schools.models import School, Subject, Classroom
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -94,3 +95,54 @@ class StudentSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         instance.subjects.set(subjects_data)
         return instance
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)  # gets access and refresh tokens
+
+        user = self.user
+        data['user'] = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "user_type": user.user_type,
+        }
+
+        # Add school details based on user type
+        if user.user_type == "student":
+            try:
+                student = Student.objects.select_related("school").get(user=user)
+                data["school"] = {
+                    "id": student.school.id,
+                    "name": student.school.name
+                }
+            except Student.DoesNotExist:
+                data["school"] = None
+
+        elif user.user_type == "teacher":
+            try:
+                teacher = Teacher.objects.select_related("school").get(user=user)
+                data["school"] = {
+                    "id": teacher.school.id,
+                    "name": teacher.school.name
+                }
+            except Teacher.DoesNotExist:
+                data["school"] = None
+
+        elif user.user_type == "schooladmin":
+            try:
+                school = School.objects.get(schooladmin__user=user)
+                data["school"] = {
+                    "id": school.id,
+                    "name": school.name
+                }
+            except School.DoesNotExist:
+                data["school"] = None
+
+        else:
+            data["school"] = None
+
+        return data

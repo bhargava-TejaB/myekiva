@@ -1,9 +1,10 @@
 from .permissions import IsSuperUser, IsSchoolAdmin
 from rest_framework.exceptions import PermissionDenied
 from schools.models import School
-from .serializers import UserSerializer, SchoolAdminSerializer, TeacherSerializer, StudentSerializer
+from .serializers import UserSerializer, SchoolAdminSerializer, TeacherSerializer, StudentSerializer, MyTokenObtainPairSerializer
 from .models import User, SchoolAdmin, Teacher, Student
 from rest_framework import viewsets, permissions
+from rest_framework_simplejwt.views import TokenObtainPairView
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,3 +119,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             school = self.request.user.schooladmin.school
             return self.queryset.filter(school=school)
         return self.queryset  # For superuser, return all students
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer

@@ -8,15 +8,19 @@ class User(AbstractUser):
         ('teacher', 'Teacher'),
         ('schooladmin', 'School Admin'),
     )
+
+    username = models.CharField(max_length=150, unique=True)  # inherited, optional to redefine
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30)  # already in AbstractUser
+    last_name = models.CharField(max_length=30)
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    email = models.EmailField(unique=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # keep username for compatibility
+    USERNAME_FIELD = 'email'  # used for login
+    REQUIRED_FIELDS = ['username']  # still needed if you want username field for display
 
     def __str__(self):
-        return f"{self.username} ({self.user_type})"
+        return f"{self.email} ({self.user_type})"
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -38,8 +42,7 @@ class Teacher(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     subjects = models.ManyToManyField(Subject, related_name='teachers', blank=True)
     contact_number = models.CharField(max_length=15, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
-
+    
     def __str__(self):
         return self.user.username
 
