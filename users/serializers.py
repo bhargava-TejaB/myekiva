@@ -99,7 +99,7 @@ class StudentSerializer(serializers.ModelSerializer):
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
-        data = super().validate(attrs)  # gets access and refresh tokens
+        data = super().validate(attrs)
 
         user = self.user
         data['user'] = {
@@ -111,38 +111,47 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             "user_type": user.user_type,
         }
 
-        # Add school details based on user type
+        school_data = None
+        student_count = 0
+        teacher_count = 0
+        class_count = 0
+
         if user.user_type == "student":
             try:
                 student = Student.objects.select_related("school").get(user=user)
-                data["school"] = {
-                    "id": student.school.id,
-                    "name": student.school.name
-                }
+                school = student.school
+                school_data = {"id": school.id, "name": school.name}
             except Student.DoesNotExist:
-                data["school"] = None
+                pass
 
         elif user.user_type == "teacher":
             try:
                 teacher = Teacher.objects.select_related("school").get(user=user)
-                data["school"] = {
-                    "id": teacher.school.id,
-                    "name": teacher.school.name
-                }
+                school = teacher.school
+                school_data = {"id": school.id, "name": school.name}
             except Teacher.DoesNotExist:
-                data["school"] = None
+                pass
 
         elif user.user_type == "schooladmin":
             try:
                 school = School.objects.get(schooladmin__user=user)
-                data["school"] = {
-                    "id": school.id,
-                    "name": school.name
-                }
+                school_data = {"id": school.id, "name": school.name}
             except School.DoesNotExist:
-                data["school"] = None
+                pass
 
-        else:
-            data["school"] = None
+        # If we found the school, fetch counts
+        if school_data:
+            school_id = school_data["id"]
+            student_count = Student.objects.filter(school_id=school_id).count()
+            teacher_count = Teacher.objects.filter(school_id=school_id).count()
+            class_count = Classroom.objects.filter(school_id=school_id).count()
+
+        data["school"] = school_data
+        data["school_stats"] = {
+            "total_students": student_count,
+            "total_teachers": teacher_count,
+            "total_subjects": class_count,
+            "pending_reviews": 9
+        }
 
         return data
