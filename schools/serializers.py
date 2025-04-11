@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import School, Subject, Classroom
+from .models import School, Classroom, Section
+from subjects.models import Subject
 from users.models import Teacher
 
 class SchoolSerializer(serializers.ModelSerializer):
@@ -7,34 +8,23 @@ class SchoolSerializer(serializers.ModelSerializer):
         model = School
         fields = '__all__'
 
-class SubjectSerializer(serializers.ModelSerializer):
+class SectionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Subject
-        fields = ['id', 'name', 'code', 'description', 'schools']
+        model = Section
+        fields = ['id','name']
 
 class ClassroomSerializer(serializers.ModelSerializer):
-    subjects = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(), many=True)
-    teacher = serializers.PrimaryKeyRelatedField(queryset=Teacher.objects.all())
-
+    sections = SectionSerializer(many=True)
     class Meta:
         model = Classroom
-        fields = ['id', 'name', 'grade', 'school', 'subjects', 'teacher']
+        fields = ['id', 'name', 'grade', 'school', 'sections']
 
     def create(self, validated_data):
-        # Extract subjects and teacher
-        subjects_data = validated_data.pop('subjects', [])
-        teacher_data = validated_data.pop('teacher', None)
-        # Check if teacher is provided
-        if not teacher_data:
-            raise ValidationError("Teacher is required for creating a classroom.")
-        
-        # Create the Classroom instance
-        classroom = Classroom.objects.create(teacher = teacher_data,**validated_data)
+        sections_data = validated_data.pop('sections')
+        classroom = Classroom.objects.create(**validated_data)
 
-        # Assign the subjects (many-to-many field)
-        classroom.subjects.set(subjects_data)
-
-        classroom.save()
+        for section_data in sections_data:
+            Section.objects.create(classroom=classroom, **section_data)
 
         return classroom
 

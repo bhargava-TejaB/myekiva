@@ -23,6 +23,7 @@ venv.bak/
 
 # Django migrations
 */migrations/*
+!*/migrations/__init__.py
 
 # Static and media files
 staticfiles/

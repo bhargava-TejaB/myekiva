@@ -4,6 +4,8 @@ from schools.models import School
 from .serializers import UserSerializer, SchoolAdminSerializer, TeacherSerializer, StudentSerializer, MyTokenObtainPairSerializer
 from .models import User, SchoolAdmin, Teacher, Student
 from rest_framework import viewsets, permissions
+from rest_framework.permissions import IsAuthenticated 
+from django.db import models
 from rest_framework_simplejwt.views import TokenObtainPairView
 import logging
 
@@ -43,6 +45,18 @@ class UserCreateViewSet(viewsets.ModelViewSet):
 
         return super().create(request, *args, **kwargs)
 
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return User.objects.all()
+        elif hasattr(self.request.user, 'schooladmin'):
+            return User.objects.filter(
+                models.Q(schooladmin__school=self.request.user.schooladmin.school) |
+                models.Q(teacher__school=self.request.user.schooladmin.school) |
+                models.Q(student__school=self.request.user.schooladmin.school)
+            ).distinct()
+        else:
+            return User.objects.none()
+
 class SchoolAdminViewSet(viewsets.ModelViewSet):
     queryset = SchoolAdmin.objects.all()
     serializer_class = SchoolAdminSerializer
@@ -51,31 +65,7 @@ class SchoolAdminViewSet(viewsets.ModelViewSet):
 class TeacherViewSet(viewsets.ModelViewSet):
     queryset = Teacher.objects.all()
     serializer_class = TeacherSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        if hasattr(self.request.user, 'schooladmin'):
-            context['school'] = self.request.user.schooladmin.school
-        return context
-
-    def create(self, request, *args, **kwargs):
-        print("ii"*100)
-        if not request.user.is_superuser and not hasattr(request.user, 'schooladmin'):
-            raise PermissionDenied("You don't have permission to create teachers.")
-        print("xx"*100)
-        if hasattr(request.user, 'schooladmin'):
-            school_id = request.data.get('school')
-            if int(school_id) != request.user.schooladmin.school.id:
-                raise PermissionDenied("You can only create teachers for your own school.")
-        print("yy"*100)
-        print(request.data.get('school'))
-        print(request.data.get('user'))
-        print('c'*100)
-        logger.debug(f"Request data: {request.data}")
-        print("yy"*100)
-        print(request.data)
-        return super().create(request, *args, **kwargs)
+    permission_classes = [IsAuthenticated]
 
 # ViewSet to create and manage students
 class StudentViewSet(viewsets.ModelViewSet):
