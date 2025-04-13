@@ -10,7 +10,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email',  'first_name', 'last_name', 'user_type', 'phone_number', 'password']
         extra_kwargs = {
-            'password': {'write_only': True, 'required': False}
+            'password': {'write_only': True, 'required': False},
+            'user_type': {'required': False}
         }
 
     def create(self, validated_data):
@@ -132,24 +133,35 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     
 class StudentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()  # Nested user serializer
-    classroom = serializers.PrimaryKeyRelatedField(queryset=Classroom.objects.all())  # Link to Classroom
+    user = UserSerializer()
 
     class Meta:
         model = Student
-        fields = ['id', 'user', 'school', 'classroom', 'roll_number', 'date_of_birth', 'parent_name', 'parent_contact', 'joined_date', 'address', 'profile_picture']
+        fields = [
+            'id', 'user', 'school', 'classroom', 'section',
+            'roll_number', 'date_of_birth', 'parent_name',
+            'parent_contact', 'joined_date', 'address', 'profile_picture'
+        ]
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        user = User.objects.create_user(**user_data)  # Create user instance
-        student = Student.objects.create(user=user, **validated_data)  # Create student instance
-        return student
+        username = user_data.get('username', user_data['email'])
+        password = f"pass1234@{user_data['first_name'].lower()}"
 
-    def update(self, instance, validated_data):
-        subjects_data = validated_data.pop('subjects', [])
-        instance = super().update(instance, validated_data)
-        instance.subjects.set(subjects_data)
-        return instance
+        # Create user
+        user = User.objects.create_user(
+            username=username,
+            email=user_data['email'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name'],
+            password=password,
+            user_type='student',
+            phone_number=user_data.get('phone_number')
+        )
+
+        # Create student
+        student = Student.objects.create(user=user, **validated_data)
+        return student
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
@@ -166,9 +178,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         }
 
         school_data = None
-        student_count = 0
-        teacher_count = 0
-        class_count = 0
 
         if user.user_type == "student":
             try:
@@ -193,19 +202,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             except School.DoesNotExist:
                 pass
 
-        # If we found the school, fetch counts
-        if school_data:
-            school_id = school_data["id"]
-            student_count = Student.objects.filter(school_id=school_id).count()
-            teacher_count = Teacher.objects.filter(school_id=school_id).count()
-            class_count = Classroom.objects.filter(school_id=school_id).count()
-
         data["school"] = school_data
-        data["school_stats"] = {
-            "total_students": student_count,
-            "total_teachers": teacher_count,
-            "total_subjects": class_count,
-            "pending_reviews": 9
-        }
 
         return data

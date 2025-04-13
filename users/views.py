@@ -79,36 +79,45 @@ class StudentViewSet(viewsets.ModelViewSet):
             context['school'] = self.request.user.schooladmin.school
         return context
 
+    def get_queryset(self):
+        queryset = self.queryset
+
+        # Restrict to school admin's school
+        if hasattr(self.request.user, 'schooladmin'):
+            queryset = queryset.filter(school=self.request.user.schooladmin.school)
+
+        # ✅ Filter by classroom and section if provided
+        classroom_id = self.request.query_params.get('classroom_id')
+        section_id = self.request.query_params.get('section_id')
+
+        if classroom_id:
+            queryset = queryset.filter(classroom_id=classroom_id)
+        if section_id:
+            queryset = queryset.filter(section_id=section_id)
+
+        return queryset
+
     def create(self, request, *args, **kwargs):
-        # Only superuser or school admin can create students
         if not request.user.is_superuser and not hasattr(request.user, 'schooladmin'):
             raise PermissionDenied("You don't have permission to create students.")
 
         if hasattr(request.user, 'schooladmin'):
             school_id = request.data.get('school')
-            if int(school_id) != request.user.schooladmin.school.id:
+            if not school_id or int(school_id) != request.user.schooladmin.school.id:
                 raise PermissionDenied("You can only create students for your own school.")
         
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        # Ensure only superuser or school admin can update students
         student = self.get_object()
-
         if not request.user.is_superuser and not hasattr(request.user, 'schooladmin'):
             raise PermissionDenied("You don't have permission to update students.")
 
         if hasattr(request.user, 'schooladmin') and student.school != request.user.schooladmin.school:
             raise PermissionDenied("You can only update students for your own school.")
-
+        
         return super().update(request, *args, **kwargs)
 
-    def get_queryset(self):
-        # If the user is a school admin, only return students for their school
-        if hasattr(self.request.user, 'schooladmin'):
-            school = self.request.user.schooladmin.school
-            return self.queryset.filter(school=school)
-        return self.queryset  # For superuser, return all students
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer

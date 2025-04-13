@@ -1,5 +1,4 @@
 from django.db import models
-from subjects.models import Subject
 
 class School(models.Model):
     name = models.CharField(max_length=255)
@@ -22,7 +21,7 @@ class Classroom(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     
     def __str__(self):
-        return f"{self.name} - {self.grade} ({self.school.name})"
+        return self.name
     
 
 class Section(models.Model):

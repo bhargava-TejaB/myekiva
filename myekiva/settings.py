@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -157,7 +158,7 @@ REST_FRAMEWORK = {
 # CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173" # React dev server
+    "http://localhost:5173","https://myekiva-draft.netlify.app" # React dev server
 ]
 
 # CORS_ALLOW_HEADERS = [
@@ -170,3 +171,13 @@ CORS_ALLOWED_ORIGINS = [
 # ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # 👈 change to 1 day or whatever you prefer
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token can last longer
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}

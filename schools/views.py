@@ -53,7 +53,7 @@ class SubjectWithClassesView(APIView):
 
         # Fetch the subjects related to the classrooms for the given school_id
         subjects = Subject.objects.filter(classrooms__school__id=school_id).distinct()
-
+        print(subjects,'***'*12)
         # Pass school_id to the serializer context
         serializer = SubjectWithClassesSerializer(subjects, many=True, context={'school_id': school_id})
 

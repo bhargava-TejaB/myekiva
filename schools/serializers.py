@@ -9,24 +9,34 @@ class SchoolSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SectionSerializer(serializers.ModelSerializer):
+    student_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Section
-        fields = ['id','name']
+        fields = ['id', 'name', 'student_count']
+
+    def get_student_count(self, section):
+        return section.student_set.count()
+
 
 class ClassroomSerializer(serializers.ModelSerializer):
     sections = SectionSerializer(many=True)
+    student_count = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Classroom
-        fields = ['id', 'name', 'grade', 'school', 'sections']
+        fields = ['id', 'name', 'grade', 'school', 'sections', 'student_count']
+
+    def get_student_count(self, classroom):
+        return classroom.student_set.count()
 
     def create(self, validated_data):
         sections_data = validated_data.pop('sections')
         classroom = Classroom.objects.create(**validated_data)
-
         for section_data in sections_data:
             Section.objects.create(classroom=classroom, **section_data)
-
         return classroom
+
 
 class SubjectWithClassesSerializer(serializers.ModelSerializer):
     classes = serializers.SerializerMethodField()
