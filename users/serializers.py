@@ -73,7 +73,6 @@ class ClassroomSectionMapField(serializers.ListField):
         
         return result
 
-
 class TeacherSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     classroom_section_map = ClassroomSectionMapField(write_only=True)
@@ -87,23 +86,59 @@ class TeacherSerializer(serializers.ModelSerializer):
         subjects_data = validated_data.pop('subjects', [])
         classroom_section_map = validated_data.pop('classroom_section_map', [])
 
-        # Create User
-        username = user_data.get('username', user_data['email'])
+        email = user_data['email']
+
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(f"User with email {email} already exists.")
+
+        password = f"pass1234@{user_data['first_name'].lower()}"
         user = User.objects.create_user(
-            username=username,
             first_name=user_data['first_name'],
             last_name=user_data['last_name'],
-            email=user_data['email'],
-            password=f"pass1234@{user_data['first_name'].lower()}",
+            email=email,
+            password=password,
             user_type=user_data['user_type'],
             phone_number=user_data.get('phone_number', None)
         )
 
         teacher = Teacher.objects.create(user=user, **validated_data)
-
-        # Set subjects
         teacher.subjects.set(subjects_data)
+        self._assign_classrooms_and_sections(teacher, classroom_section_map)
+        return teacher
 
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+        subjects_data = validated_data.pop('subjects', [])
+        classroom_section_map = validated_data.pop('classroom_section_map', [])
+
+        # Update User details
+        if user_data:
+            user = instance.user
+            new_email = user_data.get('email')
+            if new_email and new_email != user.email:
+                if User.objects.exclude(id=user.id).filter(email=new_email).exists():
+                    raise serializers.ValidationError(f"Email {new_email} already exists.")
+                user.email = new_email
+
+            user.first_name = user_data.get('first_name', user.first_name)
+            user.last_name = user_data.get('last_name', user.last_name)
+            user.phone_number = user_data.get('phone_number', user.phone_number)
+            user.save()
+
+        # Update Teacher fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if subjects_data:
+            instance.subjects.set(subjects_data)
+
+        if classroom_section_map:
+            self._assign_classrooms_and_sections(instance, classroom_section_map)
+
+        return instance
+
+    def _assign_classrooms_and_sections(self, teacher, classroom_section_map):
         classrooms = []
         sections = []
 
@@ -129,7 +164,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         teacher.classrooms.set(classrooms)
         teacher.sections.set(sections)
 
-        return teacher
 
     
 class StudentSerializer(serializers.ModelSerializer):
@@ -145,13 +179,17 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        username = user_data.get('username', user_data['email'])
+        email = user_data['email']
+
+        # Check if a user already exists with the same email
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(f"User with email {email} already exists.")
+
         password = f"pass1234@{user_data['first_name'].lower()}"
 
         # Create user
         user = User.objects.create_user(
-            username=username,
-            email=user_data['email'],
+            email=email,
             first_name=user_data['first_name'],
             last_name=user_data['last_name'],
             password=password,
@@ -162,6 +200,24 @@ class StudentSerializer(serializers.ModelSerializer):
         # Create student
         student = Student.objects.create(user=user, **validated_data)
         return student
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+
+        # Update user
+        if user_data:
+            user = instance.user
+            user.first_name = user_data.get('first_name', user.first_name)
+            user.last_name = user_data.get('last_name', user.last_name)
+            user.phone_number = user_data.get('phone_number', user.phone_number)
+            user.save()
+
+        # Update student fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 

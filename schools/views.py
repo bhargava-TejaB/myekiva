@@ -21,8 +21,60 @@ class SectionViewSet(viewsets.ModelViewSet):
     serializer_class = SectionSerializer
 
 class ClassroomViewSet(viewsets.ModelViewSet):
-    queryset = Classroom.objects.all()
+    queryset = Classroom.objects.all().order_by('grade')
     serializer_class = ClassroomSerializer
+    permission_classes = [drf_permissions.IsAuthenticated, IsSuperUserOrSchoolAdmin]
+
+    def get_queryset(self):
+        school_id = self.request.query_params.get('school_id')
+        if school_id:
+            return Classroom.objects.filter(school__id=school_id)
+        return Classroom.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        name = request.data.get("name")
+        grade = request.data.get("grade")
+        school_id = request.data.get("school")
+
+        # Check if a classroom with the same name and grade already exists in the same school
+        if Classroom.objects.filter(name=name, grade=grade, school_id=school_id).exists():
+            return Response(
+                {"detail": f"Classroom '{name}' with grade '{grade}' already exists in this school."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # If no duplicates, proceed with creating the classroom using the serializer
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        # Get the updated data from the request
+        name = request.data.get("name")
+        grade = request.data.get("grade")
+        school_id = request.data.get("school")
+
+        # Check for duplicate classroom with the same name, grade, and school (excluding the current classroom)
+        if Classroom.objects.exclude(id=instance.id).filter(name=name, grade=grade, school_id=school_id).exists():
+            return Response(
+                {"detail": f"Classroom '{name}' with grade '{grade}' already exists in this school."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Handle updating the sections (M2M field) directly here in the viewset
+        sections_data = request.data.get("sections")
+        if sections_data is not None:
+            # Handle removing and adding sections as required
+            section_ids = [section["id"] for section in sections_data]
+            instance.sections.set(section_ids)
+
+        # Proceed with updating the classroom and any other data
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
     
 class ClassroomStudentCountView(APIView):
     permission_classes = [drf_permissions.IsAuthenticated, permissions.IsSuperUserOrSchoolAdmin]

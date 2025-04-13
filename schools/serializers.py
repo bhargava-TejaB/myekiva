@@ -20,23 +20,43 @@ class SectionSerializer(serializers.ModelSerializer):
 
 
 class ClassroomSerializer(serializers.ModelSerializer):
-    sections = SectionSerializer(many=True)
-    student_count = serializers.SerializerMethodField(read_only=True)
+    sections = SectionSerializer(many=True)  # Nested serializer for sections
+    student_count = serializers.SerializerMethodField(read_only=True)  # Student count field
 
     class Meta:
         model = Classroom
-        fields = ['id', 'name', 'grade', 'school', 'sections', 'student_count']
+        fields = ['id', 'name', 'grade', 'school', 'sections', 'student_count']  # Define necessary fields
 
     def get_student_count(self, classroom):
+        # Returns the student count for the classroom
         return classroom.student_set.count()
 
     def create(self, validated_data):
-        sections_data = validated_data.pop('sections')
+        # Handle sections data in case of classroom creation
+        sections_data = validated_data.pop('sections', [])
         classroom = Classroom.objects.create(**validated_data)
+
+        # Create and associate sections with the classroom
         for section_data in sections_data:
             Section.objects.create(classroom=classroom, **section_data)
+        
         return classroom
 
+    def update(self, instance, validated_data):
+        # Handle the update of sections (M2M field)
+        sections_data = validated_data.pop('sections', None)
+
+        # Update the classroom instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # If sections data is provided, update the sections
+        if sections_data is not None:
+            section_ids = [section['id'] for section in sections_data]
+            instance.sections.set(section_ids)
+
+        return instance
 
 class SubjectWithClassesSerializer(serializers.ModelSerializer):
     classes = serializers.SerializerMethodField()

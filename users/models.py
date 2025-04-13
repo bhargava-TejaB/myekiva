@@ -6,15 +6,12 @@ from subjects.models import Subject
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('The Email field must be set')
+            raise ValueError('The Email must be set')
+
         email = self.normalize_email(email)
-
-        # Set username from email if not provided
-        if not extra_fields.get('username'):
-            extra_fields['username'] = email.split('@')[0]
-
+        extra_fields.setdefault('username', email)  # Keep username = email
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        user.set_password(password)  # this hashes password properly
         user.save(using=self._db)
         return user
 

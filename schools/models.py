@@ -17,7 +17,7 @@ class School(models.Model):
 
 class Classroom(models.Model):
     name = models.CharField(max_length=255) #Class 10
-    grade = models.CharField(max_length=50)  # e.g., "10", "9"
+    grade = models.IntegerField() # e.g., "10", "9"
     school = models.ForeignKey(School, on_delete=models.CASCADE)
     
     def __str__(self):
