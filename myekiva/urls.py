@@ -16,4 +16,5 @@ urlpatterns = [
     path('api/', include('users.urls')),  # or your router url
     path('api/', include('schools.urls')),
     path('api/', include('subjects.urls')),  # or your router url
+    path('api/', include('content.urls')),
 ]

@@ -21,17 +21,51 @@ class SubjectViewSet(viewsets.ModelViewSet):
         return Subject.objects.all()
 
     def create(self, request, *args, **kwargs):
-        name = request.data.get("name")
-        school_id = request.data.get("school")
+        data = request.data
+        subject_id = data.get("id")
+        name = data.get("name")
+        school_id = data.get("school")
+        classroom_ids = data.get("classroom_ids", [])
 
-        # Check if subject with same name and school exists
+        # UPDATE flow if ID is present
+        if subject_id:
+            try:
+                subject = Subject.objects.get(id=subject_id)
+            except Subject.DoesNotExist:
+                return Response({"detail": "Subject not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            # Check for duplicate subject name in same school
+            if Subject.objects.exclude(id=subject.id).filter(name__iexact=name, school_id=school_id).exists():
+                return Response(
+                    {"detail": f"Subject '{name}' already exists for this school."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            subject.name = name
+            subject.school_id = school_id
+            subject.save()
+
+            if classroom_ids:
+                subject.classrooms.set(classroom_ids)
+
+            serializer = self.get_serializer(subject)
+            return Response(serializer.data)
+
+        # CREATE flow
         if Subject.objects.filter(name__iexact=name, school_id=school_id).exists():
             return Response(
                 {"detail": f"Subject '{name}' already exists for this school."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        subject = serializer.save()
+
+        if classroom_ids:
+            subject.classrooms.set(classroom_ids)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -39,7 +73,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
 
         name = request.data.get("name")
         school_id = request.data.get("school")
-
+        print(request.data,'**'*100)
         # Prevent renaming to an existing subject in the same school
         if name and school_id:
             if Subject.objects.exclude(id=instance.id).filter(name__iexact=name, school_id=school_id).exists():
@@ -48,16 +82,14 @@ class SubjectViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Extract classrooms separately to update manually later
-        classrooms = request.data.pop("classrooms", None)
+        classroom_ids = request.data.pop("classroom_ids", None)
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # Update classrooms if provided
-        if classrooms is not None:
-            instance.classrooms.set(classrooms)
+        if classroom_ids is not None:
+            instance.classrooms.set(classroom_ids)
 
         return Response(serializer.data)
 

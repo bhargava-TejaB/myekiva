@@ -43,3 +43,6 @@ local_settings.py
 
 # Windows specific files
 Thumbs.db
+
+# env files
+.env
