@@ -14,7 +14,7 @@ from users import permissions
 class SchoolViewSet(viewsets.ModelViewSet):
     queryset = School.objects.all()
     serializer_class = SchoolSerializer
-    permission_classes = [drf_permissions.IsAuthenticated, permissions.IsSuperUser]
+    permission_classes = [drf_permissions.IsAuthenticated]
 
 class SectionViewSet(viewsets.ModelViewSet):
     queryset = Section.objects.all()
@@ -23,7 +23,7 @@ class SectionViewSet(viewsets.ModelViewSet):
 class ClassroomViewSet(viewsets.ModelViewSet):
     queryset = Classroom.objects.all().order_by('grade')
     serializer_class = ClassroomSerializer
-    permission_classes = [drf_permissions.IsAuthenticated, IsSuperUserOrSchoolAdmin]
+    permission_classes = [drf_permissions.IsAuthenticated]
 
     def get_queryset(self):
         school_id = self.request.query_params.get('school_id')
@@ -77,7 +77,7 @@ class ClassroomViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
 class ClassroomStudentCountView(APIView):
-    permission_classes = [drf_permissions.IsAuthenticated, permissions.IsSuperUserOrSchoolAdmin]
+    permission_classes = [drf_permissions.IsAuthenticated]
 
     def get(self, request, school_id):
         classrooms = Classroom.objects.filter(school_id=school_id)

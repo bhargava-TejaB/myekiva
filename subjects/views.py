@@ -8,11 +8,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from users.models import School, Subject
+from rest_framework.decorators import action
 
 class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all().order_by('name')
     serializer_class = SubjectSerializer
-    permission_classes = [IsAuthenticated, IsSuperUserOrSchoolAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         school_id = self.request.query_params.get('school_id')
@@ -92,6 +93,22 @@ class SubjectViewSet(viewsets.ModelViewSet):
             instance.classrooms.set(classroom_ids)
 
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="details")
+    def with_teachers(self, request, pk=None):
+        subject = self.get_object()
+
+        # Get all teachers teaching this subject
+        teachers = subject.teachers.all()
+
+        response_data = {
+            "subject": subject.name,
+            "teachers": [
+                {"id": teacher.user.id, "name": teacher.user.get_full_name() or teacher.user.username}
+                for teacher in teachers
+            ]
+        }
+        return Response(response_data)
 
     
 class SchoolStatsView(APIView):

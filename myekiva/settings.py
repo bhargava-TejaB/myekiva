@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'schools',
     'subjects',
     'content',
+    'chat',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -191,3 +193,14 @@ SIMPLE_JWT = {
 }
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+ASGI_APPLICATION = "myekiva.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}

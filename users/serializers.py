@@ -3,7 +3,7 @@ from .models import User, SchoolAdmin, Teacher, Student
 from schools.models import School, Classroom, Section
 from subjects.models import Subject
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from subjects.serializers import SubjectSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -76,10 +76,17 @@ class ClassroomSectionMapField(serializers.ListField):
 class TeacherSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     classroom_section_map = ClassroomSectionMapField(write_only=True)
+    subjects = SubjectSerializer(many=True, read_only=True)  # for GET
+    subject_ids = serializers.PrimaryKeyRelatedField(        # for POST/PUT
+        queryset=Subject.objects.all(),
+        many=True,
+        write_only=True,
+        source="subjects"
+    )
 
     class Meta:
         model = Teacher
-        fields = ['id', 'user', 'school', 'subjects', 'classroom_section_map']
+        fields = ['id', 'user', 'school', 'subjects', 'subject_ids', 'classroom_section_map']
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')

@@ -77,7 +77,7 @@ class Student(models.Model):
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
-    subjects = models.ManyToManyField(Subject, blank=True)
+    subjects = models.ManyToManyField(Subject, blank=True, related_name="teachers")
     classrooms = models.ManyToManyField(Classroom, blank=True)
     sections = models.ManyToManyField(Section, blank=True)
     

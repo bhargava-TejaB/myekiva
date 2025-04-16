@@ -46,7 +46,7 @@ def generate_education_content(topic: str) -> dict:
 
     try:
         response = openai.completions.create(
-            model="gpt-4o-mini",  # or the specific model you want to use
+            model="gpt-4.5-preview",  # or the specific model you want to use
             prompt=prompt,
             temperature=0.7,
             max_tokens=1000,
@@ -61,3 +61,5 @@ def generate_education_content(topic: str) -> dict:
 
     except Exception as e:
         return {"error": str(e)}
+
+
