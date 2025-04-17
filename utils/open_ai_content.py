@@ -1,35 +1,34 @@
 import os
 import re
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load .env values
+# Load .env file
 load_dotenv()
 
-# Set the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def parse_content(content):
+def parse_content(content: str) -> dict:
     """
-    Parses the raw OpenAI content into structured sections: advanced, medium, and basic.
+    Parses the OpenAI response formatted in Markdown into structured sections.
+    Looks for headings like ## Advanced, ## Medium, ## Basic
     """
-    sections = re.split(r'\b(Advanced|Medium|Basic):\b', content)
+    pattern = r"##\s*(Advanced|Medium|Basic)\s*\n(.*?)(?=\n##\s*(Advanced|Medium|Basic)|\Z)"
+    matches = re.findall(pattern, content, re.DOTALL | re.IGNORECASE)
+
     parsed = {}
-    for i in range(1, len(sections), 2):
-        key = sections[i].lower()
-        value = sections[i + 1].strip()
-        parsed[key] = value
+    for match in matches:
+        level = match[0].lower()
+        text = match[1].strip()
+        parsed[level] = text
+
     return parsed
+
 
 def generate_education_content(topic: str) -> dict:
     """
-    Generates educational content using OpenAI's GPT model in 3 levels:
-    - advanced
-    - medium
-    - basic
-
-    :param topic: The topic to generate content for
-    :return: A dictionary with parsed and raw response
+    Generates 3-level educational content using OpenAI's GPT model.
     """
     prompt = f"""
     Create educational content for the topic: "{topic}".
@@ -38,22 +37,21 @@ def generate_education_content(topic: str) -> dict:
     2. Medium: Moderate depth for average students.
     3. Basic: Simple and easy for dull students.
 
-    Format your answer clearly under three headers:
+    Format clearly under these headers:
     - Advanced
     - Medium
     - Basic
     """
 
     try:
-        response = openai.completions.create(
-            model="gpt-4.5-preview",  # or the specific model you want to use
-            prompt=prompt,
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=1000,
         )
 
-        content = response['choices'][0]['text']
-
+        content = response.choices[0].message.content
         return {
             "raw": content,
             "parsed": parse_content(content)
@@ -61,5 +59,3 @@ def generate_education_content(topic: str) -> dict:
 
     except Exception as e:
         return {"error": str(e)}
-
-
