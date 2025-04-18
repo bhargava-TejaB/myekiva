@@ -98,7 +98,8 @@ class TeacherSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(f"User with email {email} already exists.")
 
-        password = f"pass1234@{user_data['first_name'].lower()}"
+        # password = f"pass1234@{user_data['first_name'].lower()}"
+        password = "pass"
         user = User.objects.create_user(
             first_name=user_data['first_name'],
             last_name=user_data['last_name'],
@@ -192,8 +193,8 @@ class StudentSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(f"User with email {email} already exists.")
 
-        password = f"pass1234@{user_data['first_name'].lower()}"
-
+        # password = f"pass1234@{user_data['first_name'].lower()}"
+        password = "pass"
         # Create user
         user = User.objects.create_user(
             email=email,
