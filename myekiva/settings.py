@@ -156,6 +156,7 @@ AUTH_USER_MODEL = 'users.User'
 CSRF_TRUSTED_ORIGINS = [
     "https://*.ngrok-free.app",
     "https://*.ngrok.io",  # add this too if you're using old ngrok domains
+    "http://localhost:5173"
 ]
 
 REST_FRAMEWORK = {
