@@ -110,7 +110,33 @@ class SubjectViewSet(viewsets.ModelViewSet):
         }
         return Response(response_data)
 
-    
+    @action(detail=False, methods=["get"], url_path="subject_by_student")
+    def get_subjects_for_student_class(self, request,pk=None):
+        student_id = request.query_params.get('student_id')
+        
+        if not student_id:
+            return Response(
+                {"detail": "Missing required query parameter: student_id"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Fetch the student and their classroom
+            student = Student.objects.get(user__id=student_id)
+
+            classroom = student.classroom
+
+            # Fetch subjects associated with the classroom
+            subjects = Subject.objects.filter(classrooms=classroom)
+            data = [{"id": subj.id, "name": subj.name} for subj in subjects]
+            return Response(data)
+
+        except Student.DoesNotExist:
+            return Response(
+                {"detail": f"Student with id '{student_id}' not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 class SchoolStatsView(APIView):
     permission_classes = [IsAuthenticated]
 

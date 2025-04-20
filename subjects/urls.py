@@ -7,5 +7,5 @@ router.register(r'subjects', SubjectViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('school_stats', SchoolStatsView.as_view(), name='school-stats'),
+    path('school_stats', SchoolStatsView.as_view(), name='school-stats')
 ]
